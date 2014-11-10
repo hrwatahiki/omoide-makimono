@@ -8,27 +8,35 @@ handlers:
 - url: /favicon\.ico
   static_files: favicon.ico
   upload: favicon\.ico
+  secure: always
   
 - url: /css
   static_dir: css
+  secure: always
 
 - url: /img
   static_dir: img
+  secure: always
   
 - url: /jquery
   static_dir: jquery
+  secure: always
 
 - url: /js
   static_dir: js
+  secure: always
 
 - url: /lightbox
   static_dir: lightbox
+  secure: always
   
 - url: /MyThumbnail
   static_dir: MyThumbnail
+  secure: always
   
 - url: .*
   script: main.app
+  secure: always
   
 libraries:
 - name: webapp2
