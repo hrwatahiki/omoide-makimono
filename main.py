@@ -16,14 +16,18 @@
 # limitations under the License.
 #
 import datetime
+import urllib
 import os
 
 import jinja2
 import webapp2
 
 from google.appengine.ext import ndb
+from google.appengine.ext import blobstore
+from google.appengine.ext.webapp import blobstore_handlers
 
 import getimageinfo
+
 
 #jinjaの定義
 JINJA_ENVIRONMENT = jinja2.Environment(
@@ -35,29 +39,22 @@ JINJA_ENVIRONMENT = jinja2.Environment(
 class Omoide(ndb.Model):
     """画像のモデル。"""
     user = ndb.StringProperty()
-    image = ndb.BlobProperty()
+    image_key = ndb.BlobKeyProperty()
     comment = ndb.StringProperty()
-    mimetype = ndb.StringProperty()
     date = ndb.DateProperty()
 
-    
+
 class MainHandler(webapp2.RequestHandler):
     def get(self):
-        self.redirect('./list')
+        self.redirect('/list')
 
-class ImageHandler(webapp2.RequestHandler):
-    """画像を出力する"""
-    def get(self, urlsafe_key):
-        omoide = ndb.Key(urlsafe=urlsafe_key).get()
-        if omoide:
-            self.response.headers['Content-Type'] = str(omoide.mimetype)
-            self.response.out.write(omoide.image)
-        else:
-            self.error(404)
-            self.response.out.write('404 not found.')
-            self.response.out.write(str(omoide))
-        return
 
+class DownloadHandler(blobstore_handlers.BlobstoreDownloadHandler):
+    """画像を出力する。"""
+    def get(self, resource):
+        resource = str(urllib.unquote(resource))
+        blob_info = blobstore.BlobInfo.get(resource)
+        self.send_blob(blob_info)
 
 
 class ListHandler(webapp2.RequestHandler):
@@ -70,63 +67,84 @@ class ListHandler(webapp2.RequestHandler):
             if date != omoide.date:
                 date = omoide.date
                 view_item.append([date.year, date.month, []])
-            view_item[-1][-1].append([omoide.key.urlsafe(), omoide.comment])
+            view_item[-1][-1].append([omoide.image_key, omoide.comment])
         template_value = {'view_item':view_item}
-        template = JINJA_ENVIRONMENT.get_template('./html/list.html')
+        template = JINJA_ENVIRONMENT.get_template('/html/list.html')
         self.response.write(template.render(template_value))
 
 
 class RegistHandler(webapp2.RequestHandler):
     """画像を登録する。"""
     def get(self):
-        template_value = {'message':u'写真と日付を入力して、登録を押してください。'}
-        template = JINJA_ENVIRONMENT.get_template('./html/register.html')
+        template_value = {
+            'message':u'写真と日付を入力して、登録を押してください。',
+            'upload_url':blobstore.create_upload_url('/upload'),
+            'year':'',
+            'month':'',
+            'comment':'',
+        }
+        template = JINJA_ENVIRONMENT.get_template('/html/register.html')
         self.response.write(template.render(template_value))
 
+
+class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
+    """画像をBlobStoreに格納する。"""
     def post(self):
         message = ''
-        is_good = True
-
-        #正規の画像であるか調べる。
-        try:
-            image = str(self.request.get('image'))
-            content_type, height, width = getimageinfo.getImageInfo(image)
-            if content_type == "":
-                message = message + u"登録できるファイルは画像だけです。"
-                is_good = False
-        except:
-            message = message + u"登録できるファイルは画像だけです。"
-            is_good = False
-
+        date_is_good = True
+        file_is_good = True
+        file_exists = True
         #正規の日付であるか調べる。
         try:
             year = int(self.request.get('year'))
             month = int(self.request.get('month'))
             omoide_date = datetime.date(year, month, 1)
         except (TypeError, ValueError):
-            message = message + u"日付が有効でありません。"
-            is_good = False
+            message = message + u'正しい日付を入力してください。'
+            date_is_good = False
 
-        #画像をDBに登録する。
-        if is_good:
+        #正しいファイルがあるか調べる。
+        upload_files = self.get_uploads('image')  # 'file' is file upload field in the form
+        if upload_files:
+            blob_info = upload_files[0]
+            if not blob_info.content_type.startswith('image'):
+                message = message + u'画像を選択してください。'
+                file_is_good = False
+        else:
+            message = message + u'画像を選択してください。'
+            date_is_good = False
+            file_is_good = False
+            file_exists = False
+
+        if date_is_good and file_is_good:
             omoide = Omoide()
             omoide.user = 'test'
-            omoide.image = image
+            omoide.image_key = blob_info.key()
             omoide.comment = self.request.get('comment')
-            omoide.mimetype = self.request.body_file.vars['image'].headers['content-type']
             omoide.date = omoide_date
             omoide.put()
-            message = message + u"登録しました。"
+            message = message + u'登録しました。'
+        elif file_is_good:
+            blob_info.delete()
+
 
         #画面を出力
-        template_value = {'message':message}
-        template = JINJA_ENVIRONMENT.get_template('./html/register.html')
+        template_value = {
+            'message':message,
+            'upload_url':blobstore.create_upload_url('/upload'),
+            'year':self.request.get('year'),
+            'month':self.request.get('month'),
+            'comment':self.request.get('comment'),
+        }
+        template = JINJA_ENVIRONMENT.get_template('/html/register.html')
         self.response.write(template.render(template_value))
+
 
 #ルータ
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
-    ('/image/([^/]+)', ImageHandler),
+    ('/download/([^/]+)', DownloadHandler),
     ('/list', ListHandler),
     ('/register', RegistHandler),
+    ('/upload', UploadHandler),
 ], debug=True)
