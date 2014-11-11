@@ -8,8 +8,8 @@
 </head>
 <body>
   <h1>おもいでまきもの</h1>
-  {% if user %}
-  <div>綿引さんの思い出です。</div>
+  {% if user_name %}
+  <div>{{ user_name }}さんの思い出です。</div>
   {% endif %}
   <hr>
   {% block message%}{% endblock %}

@@ -16,8 +16,10 @@
 # limitations under the License.
 #
 import datetime
-import urllib
+import hashlib
+import logging
 import os
+import urllib
 
 import jinja2
 import webapp2
@@ -37,29 +39,47 @@ JINJA_ENVIRONMENT = jinja2.Environment(
 
 class Omoide(ndb.Model):
     """画像のモデル。"""
-    user = ndb.StringProperty()
+    user_name = ndb.StringProperty()
     image_key = ndb.BlobKeyProperty()
     comment = ndb.StringProperty()
     date = ndb.DateProperty()
 
 
-class MainHandler(webapp2.RequestHandler):
-    def get(self):
-        self.redirect('/list')
+class User(ndb.Model):
+    """ユーザー。"""
+    user_name = ndb.StringProperty()
+    password = ndb.StringProperty()
 
+
+class MainHandler(webapp2.RequestHandler):
+    """デフォルト。ログイン画面へリダイレクトする。"""
+    def get(self):
+        self.redirect('/login')
+        return
 
 class DownloadHandler(blobstore_handlers.BlobstoreDownloadHandler):
     """画像を出力する。"""
     def get(self, resource):
+        session = get_current_session()
+        if not session.has_key('user_name'):
+            self.redirect('/login')
+            return
+
         resource = str(urllib.unquote(resource))
         blob_info = blobstore.BlobInfo.get(resource)
         self.send_blob(blob_info)
-
+        return
 
 class ListHandler(webapp2.RequestHandler):
     """一覧を表示する。"""
     def get(self):
-        omoides = Omoide.query(Omoide.user == 'test').order(Omoide.date).fetch(100)
+        session = get_current_session()
+        has = str(session.has_key('user_name'))
+        if not session.has_key('user_name'):
+            self.redirect('/login')
+            return
+
+        omoides = Omoide.query(Omoide.user_name == session['user_name']).order(Omoide.date).fetch(100)
         view_item = []
         date = datetime.date(1, 1, 1)
         for omoide in omoides:
@@ -67,41 +87,89 @@ class ListHandler(webapp2.RequestHandler):
                 date = omoide.date
                 view_item.append([date.year, date.month, []])
             view_item[-1][-1].append([omoide.image_key, omoide.comment])
-        template_value = {'view_item':view_item}
+        template_value = {'user_name':session['user_name'], 'view_item':view_item}
         template = JINJA_ENVIRONMENT.get_template('/html/list.html')
         self.response.write(template.render(template_value))
+        return
 
-        
+
 class LoginHandler(webapp2.RequestHandler):
     """ログインする。"""
     def get(self):
-        template_value = {}
+        template_value = {'message':u'ユーザ名とパスワードを入れて、ログインか新規登録を押してください。'}
         template = JINJA_ENVIRONMENT.get_template('/html/login.html')
-        self.response.write(template.render(template_value))        
-    
+        self.response.write(template.render(template_value))
+        return
+
     def post(self):
-        #todo:login
-        pass
-    
-    
+        #セッションを終了する。
+        session = get_current_session()
+        if session.is_active():
+            session.terminate()
+        logged_in = False
+        message = u'ログインに失敗しました。'
+
+        user_name = self.request.get('user_name')
+        password = hashlib.sha512(self.request.get('password')).hexdigest()
+
+        if self.request.get('login'):
+            #DBにユーザ名とパスワードが一致するユーザがあれば、ログインする。
+            user = User.query(ndb.AND(User.user_name==user_name, User.password==password)).fetch(1)
+            if user:
+                session['user_name'] = user_name
+                session['token'] = hashlib.sha512('3rjTK9pJVZtG'+str(datetime.datetime.now())).hexdigest()
+                logged_in = True
+        elif self.request.get('new'):
+            #DBに同じユーザがいなければ、ユーザを新規登録し、ログインする。
+            user = User.query(ndb.AND(User.user_name==user_name)).fetch(1)
+            if user:
+                message = u'ユーザ名を変えてください。'
+            else:
+                user = User()
+                user.user_name = user_name
+                user.password = password
+                user.put()
+                session['user_name'] = user_name
+                logged_in = True
+
+        if logged_in:
+            self.redirect('/list')
+            return
+
+        template_value = {'message':message}
+        template = JINJA_ENVIRONMENT.get_template('/html/login.html')
+        self.response.write(template.render(template_value))
+
+
 class LogoutHandler(webapp2.RequestHandler):
     """ログアウトする。"""
     def get(self):
+        #セッションを終了する。
         session = get_current_session()
-        if not session:
-            session.terminate()
-        self.redirect('/login')
+        session.terminate()
 
-    
+        template_value = {'message':u'ログアウトしました。'}
+        template = JINJA_ENVIRONMENT.get_template('/html/login.html')
+        self.response.write(template.render(template_value))
+        return
+
+
 class RegistHandler(webapp2.RequestHandler):
     """画像を登録する。"""
     def get(self):
+        session = get_current_session()
+        if not session.has_key('user_name'):
+            self.redirect('/login')
+            return
+
         template_value = {
+            'user_name':session['user_name'],
             'message':u'写真と日付を入力して、登録を押してください。',
             'upload_url':blobstore.create_upload_url('/upload'),
             'year':'',
             'month':'',
             'comment':'',
+            'token':session['token'],
         }
         template = JINJA_ENVIRONMENT.get_template('/html/register.html')
         self.response.write(template.render(template_value))
@@ -110,10 +178,13 @@ class RegistHandler(webapp2.RequestHandler):
 class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
     """画像をBlobStoreに格納する。"""
     def post(self):
+        session = get_current_session()
         message = ''
-        date_is_good = True
-        file_is_good = True
+        date_is_good = False
+        file_is_good = False
         file_exists = True
+        token_is_good = False
+        
         #正規の日付であるか調べる。
         try:
             year = int(self.request.get('year'))
@@ -121,40 +192,52 @@ class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
             omoide_date = datetime.date(year, month, 1)
         except (TypeError, ValueError):
             message = message + u'正しい日付を入力してください。'
-            date_is_good = False
+        else:
+            date_is_good = True
 
         #正しいファイルがあるか調べる。
         upload_files = self.get_uploads('image')  # 'file' is file upload field in the form
         if upload_files:
             blob_info = upload_files[0]
-            if not blob_info.content_type.startswith('image'):
+            if blob_info.content_type.startswith('image'):
+                file_is_good = True
+            else:
                 message = message + u'画像を選択してください。'
-                file_is_good = False
         else:
             message = message + u'画像を選択してください。'
-            date_is_good = False
-            file_is_good = False
             file_exists = False
 
-        if date_is_good and file_is_good:
+        #トークンが正しいか調べる。
+        if session.has_key('token'):
+            if session['token'] == self.request.get('token'):
+                token_is_good = True
+            
+        #日付が正しく、ファイルが正しく、トークンが正しければ登録する。
+        if date_is_good and file_is_good and token_is_good and session.has_key('user_name'):
             omoide = Omoide()
-            omoide.user = 'test'
+            omoide.user_name = session['user_name']
             omoide.image_key = blob_info.key()
             omoide.comment = self.request.get('comment')
             omoide.date = omoide_date
             omoide.put()
             message = message + u'登録しました。'
+        #どちらかが間違っている場合は、アップロードしたファイルを削除する。
         elif file_exists:
             blob_info.delete()
 
+        if not session.has_key('user_name'):
+            self.redirect('/login')
+            return
 
-        #画面を出力
+        #画面を出力する。
         template_value = {
+            'user_name':session['user_name'],
             'message':message,
             'upload_url':blobstore.create_upload_url('/upload'),
             'year':self.request.get('year'),
             'month':self.request.get('month'),
             'comment':self.request.get('comment'),
+            'token':session['token'],
         }
         template = JINJA_ENVIRONMENT.get_template('/html/register.html')
         self.response.write(template.render(template_value))

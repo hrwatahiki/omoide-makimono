@@ -1,0 +1,17 @@
+{% extends "/html/base_template.html" %}
+{% block css %}{% endblock %}
+{% block js %}{% endblock %}
+{% block message %}
+<div>{{ message }}</div>
+<hr>
+{% endblock %}
+{% block content %}
+<div>
+  <form action="/login" method="post">
+    <label for="user_name">ユーザー名：</label><input type="input" name="user_name" id="user_name"><br>
+    <label for="password">パスワード：</label><input type="password" name="password" id="password"><br>
+    <input type="submit" name="login" id="login" value="ログイン"><br>
+    <input type="submit" name="new" id="new" value="新規登録">
+  </form>
+</div>
+{% endblock %}
