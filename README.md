@@ -1,9 +1,14 @@
 omoide-makimono
 ===============
 
-Web site scripts for the timeline of images.
+Web forum site scripts for the timeline of images.
 author: hrwatahiki(hrwatahiki at gmail.com, twitter:@hrwatahiki)
 
+おもいでまきもの
+===============
+
+画像をタイムライン上に表示する画像掲示板のスクリプトです。
+author: hrwatahiki(hrwatahiki at gmail.com, twitter:@hrwatahiki)
 
 License: MIT License
 ----------------------
