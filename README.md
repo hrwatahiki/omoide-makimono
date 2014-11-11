@@ -1,28 +1,22 @@
-omoide-makimono
-===============
+#omoide-makimono
 
 Web forum site scripts for the timeline of images.
 author: hrwatahiki(hrwatahiki at gmail.com, twitter:@hrwatahiki)
 
-License
-----------------------
+##License
 main.py is MIT License.
 Other scripts follow the original license.
 
-おもいでまきもの
-===============
-
+#おもいでまきもの
 画像をタイムライン上に表示する画像掲示板のスクリプトです。
 author: hrwatahiki(hrwatahiki at gmail.com, twitter:@hrwatahiki)
 
-License
-----------------------
+##ライセンス
 main.py は MIT Licenseです。
 それ以外のスクリプトは元のライセンスに従います。
 
 
-The MIT License (MIT)
-+++++++++++++++++++++
+#The MIT License (MIT)
 Copyright (c) 2014 hrwatahiki
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
