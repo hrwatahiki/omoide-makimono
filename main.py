@@ -26,8 +26,7 @@ from google.appengine.ext import ndb
 from google.appengine.ext import blobstore
 from google.appengine.ext.webapp import blobstore_handlers
 
-import getimageinfo
-
+from gaesessions import get_current_session
 
 #jinjaの定義
 JINJA_ENVIRONMENT = jinja2.Environment(
@@ -72,7 +71,23 @@ class ListHandler(webapp2.RequestHandler):
         template = JINJA_ENVIRONMENT.get_template('/html/list.html')
         self.response.write(template.render(template_value))
 
+        
+class LoginHandler(webapp2.RequestHandler):
+    def get(self):
+        template_value = {}
+        template = JINJA_ENVIRONMENT.get_template('/html/login.html')
+        self.response.write(template.render(template_value))        
+    
+    
+class LogoutHandler(webapp2.RequestHandler):
+    """ログアウトする。"""
+    def get(self):
+        session = get_current_session()
+        if not session:
+            session.terminate()
+        self.redirect('/login')
 
+    
 class RegistHandler(webapp2.RequestHandler):
     """画像を登録する。"""
     def get(self):
@@ -145,6 +160,8 @@ app = webapp2.WSGIApplication([
     ('/', MainHandler),
     ('/download/([^/]+)', DownloadHandler),
     ('/list', ListHandler),
+    ('/login', LoginHandler),
+    ('/logout', LogoutHandler),
     ('/register', RegistHandler),
     ('/upload', UploadHandler),
 ], debug=True)
