@@ -1,29 +1,22 @@
-{% autoescape true %}<!DOCTYPE html>
-<html lang='ja'>
-<head>
-  <link rel="stylesheet" type="text/css" href="/css/omoide-makimono.css">
-  <title>おもいでまきもの</title>
-</head>
-<body>
-  <h1>おもいでまきもの</h1>
-  <div>綿引さんの思い出です。</div>
-  <hr>
-  <div>{{ message }}</div>
-  <hr>
-  <div>
-    <form action="{{ upload_url }}" enctype="multipart/form-data" method="post">
-      <input type="file" name="image" id="image"><br>
-      写真の年月：<input type="text" name="year" id="year" size="4" value="{{ year }}"><label for="year">年</label>
-      &nbsp;<input type="text" name="month" id="month" size="2" value="{{ month }}"><label for="month">月</label><br>
-      <label for="comment">コメント：</label><input type="text" name="comment" id="comment" value="{{ comment }}"><br>
-      <input type="submit" value="登録">
-    </form>
-  </div>
-  <hr>
-  <div>
-    <a href="/list">戻る</a>
-  </div>
-  <hr>
-  <p>copyright 2014 @hrwatahiki</p><p>お問い合わせは、hrwatahiki at gmail.comまでどうぞ</p>
-</body>
-</html>{% endautoescape %}
+{% extends "/html/base_template.html" %}
+{% block css %}{% endblock %}
+{% block js %}{% endblock %}
+{% block message %}
+<div>{{ message }}</div>
+<hr>
+{% endblock %}
+{% block content %}
+<div>
+  <form action="{{ upload_url }}" enctype="multipart/form-data" method="post">
+    <input type="file" name="image" id="image"><br>
+    写真の年月：<input type="text" name="year" id="year" size="4" value="{{ year }}"><label for="year">年</label>
+    &nbsp;<input type="text" name="month" id="month" size="2" value="{{ month }}"><label for="month">月</label><br>
+    <label for="comment">コメント：</label><input type="text" name="comment" id="comment" value="{{ comment }}"><br>
+    <input type="submit" value="登録">
+  </form>
+</div>
+<hr>
+<div>
+  <a href="/list">戻る</a>
+</div>
+{% endblock %}

@@ -1,40 +1,35 @@
-{% autoescape true %}<!DOCTYPE html>
-<html lang='ja'>
-<head>
-  <link rel="stylesheet" type="text/css" href="/MyThumbnail/MyThumbnail.css">
-  <link rel="stylesheet" type="text/css" href="/lightbox/css/lightbox.css">
-  <link rel="stylesheet" type="text/css" href="/css/omoide-makimono.css">
-  <script type="text/javascript" src="/jquery/jquery-2.1.1.min.js"></script>
-  <script type="text/javascript" src="/MyThumbnail/jquery.MyThumbnail.js"></script>
-  <script type="text/javascript" src="/lightbox/js/lightbox.min.js"></script>
-  <script type="text/javascript" src="/js/list.js"></script>
-  <title>おもいでまきもの</title>
-</head>
-<body>
-  <h1>おもいでまきもの</h1>
-  <div>綿引さんの思い出です。</div>
-  <hr>
-  <div><a href="/register">画像を登録</a></div>
-  <hr>
-  <table class="thumbnail-table">
-    {% for month_data in view_item %}
-    <tr>
-      <td>{{ month_data[0] }}年 {{ month_data[1]}}月</td>
-      <td>
-        <div class="thumbnail-list">
-        {% for image_data in month_data[2] %}
-          <a href="/download/{{ image_data[0] }}"
-          data-lightbox="list-{{ month_data[0] }}-{{ month_data[1] }}"
-          title="{{ image_data[1] }}">
-            <img src="/download/{{ image_data[0] }}" alt="{{ image_data[1] }}">
-          </a>
-        {% endfor %}
-        </div>
-      </td>
-    </tr>
-    {% endfor %}
-  </table>
-  <hr>
-  <p>copyright 2014 @hrwatahiki</p><p>お問い合わせは、hrwatahiki at gmail.comまでどうぞ</p>
-</body>
-</html>{% endautoescape %}
+{% extends "/html/base_template.html" %}
+{% block css %}
+<link rel="stylesheet" type="text/css" href="/MyThumbnail/MyThumbnail.css">
+<link rel="stylesheet" type="text/css" href="/lightbox/css/lightbox.css">
+{% endblock %}
+{% block js %}
+<script type="text/javascript" src="/jquery/jquery-2.1.1.min.js"></script>
+<script type="text/javascript" src="/MyThumbnail/jquery.MyThumbnail.js"></script>
+<script type="text/javascript" src="/lightbox/js/lightbox.min.js"></script>
+<script type="text/javascript" src="/js/list.js"></script>
+{% endblock %}
+{% block message %}
+<div><a href="/register">画像を登録</a></div>
+<hr>
+{% endblock %}
+{% block content %}
+<table class="thumbnail-table">
+{% for month_data in view_item %}
+  <tr>
+    <td>{{ month_data[0] }}年 {{ month_data[1]}}月</td>
+    <td>
+      <div class="thumbnail-list">
+      {% for image_data in month_data[2] %}
+        <a href="/download/{{ image_data[0] }}"
+           data-lightbox="list-{{ month_data[0] }}-{{ month_data[1] }}"
+           title="{{ image_data[1] }}">
+          <img src="/download/{{ image_data[0] }}" alt="{{ image_data[1] }}">
+        </a>
+      {% endfor %}
+      </div>
+    </td>
+  </tr>
+{% endfor %}
+</table>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% autoescape true %}<!DOCTYPE html>
+<html lang='ja'>
+<head>
+  {% block css %}{% endblock %}
+  <link rel="stylesheet" type="text/css" href="/css/omoide-makimono.css">
+  {% block js %}{% endblock %}
+  <title>おもいでまきもの</title>
+</head>
+<body>
+  <h1>おもいでまきもの</h1>
+  {% if user %}
+  <div>綿引さんの思い出です。</div>
+  {% endif %}
+  <hr>
+  {% block message%}{% endblock %}
+  {% block content %}
+  {% endblock %}
+  <hr>
+  <p>copyright 2014 @hrwatahiki</p><p>お問い合わせは、hrwatahiki at gmail.comまでどうぞ</p>
+</body>
+</html>{% endautoescape %}
