@@ -17,7 +17,6 @@
 #
 import datetime
 import hashlib
-import logging
 import os
 import urllib
 
@@ -51,11 +50,58 @@ class User(ndb.Model):
     password = ndb.StringProperty()
 
 
+def GetListViewItem(user_name):
+    """一覧用のリストを作成する。"""
+    omoides = Omoide.query(Omoide.user_name == user_name).order(Omoide.date).fetch(1000)
+    view_item = []
+    date = datetime.date(1, 1, 1)
+    for omoide in omoides:
+        if date != omoide.date:
+            date = omoide.date
+            view_item.append([date.year, date.month, []])
+        view_item[-1][-1].append([omoide.image_key, omoide.comment])
+    return view_item
+
+
 class MainHandler(webapp2.RequestHandler):
     """デフォルト。ログイン画面へリダイレクトする。"""
     def get(self):
         self.redirect('/login')
         return
+
+
+class DeleteHandler(webapp2.RequestHandler):
+    """選択したファイルを削除する。"""
+    def get(self, resource):
+        session = get_current_session()
+        if not session.has_key('user_name'):
+            self.redirect('/login')
+            return
+
+        resource = str(urllib.unquote(resource))
+        blob_info = blobstore.BlobInfo.get(resource)
+        key = blob_info.key()
+        blob_info.delete()
+        Omoide.query(Omoide.image_key == key).get().key.delete()
+
+        self.redirect('/delete_list')
+        return
+
+
+class DeleteListHandler(webapp2.RequestHandler):
+    """削除用の一覧を表示する。"""
+    def get(self):
+        session = get_current_session()
+        if not session.has_key('user_name'):
+            self.redirect('/login')
+            return
+
+        view_item = GetListViewItem(session['user_name'])
+        template_value = {'user_name':session['user_name'], 'view_item':view_item}
+        template = JINJA_ENVIRONMENT.get_template('/html/delete_list.html')
+        self.response.write(template.render(template_value))
+        return
+
 
 class DownloadHandler(blobstore_handlers.BlobstoreDownloadHandler):
     """画像を出力する。"""
@@ -70,23 +116,16 @@ class DownloadHandler(blobstore_handlers.BlobstoreDownloadHandler):
         self.send_blob(blob_info)
         return
 
+
 class ListHandler(webapp2.RequestHandler):
     """一覧を表示する。"""
     def get(self):
         session = get_current_session()
-        has = str(session.has_key('user_name'))
         if not session.has_key('user_name'):
             self.redirect('/login')
             return
 
-        omoides = Omoide.query(Omoide.user_name == session['user_name']).order(Omoide.date).fetch(100)
-        view_item = []
-        date = datetime.date(1, 1, 1)
-        for omoide in omoides:
-            if date != omoide.date:
-                date = omoide.date
-                view_item.append([date.year, date.month, []])
-            view_item[-1][-1].append([omoide.image_key, omoide.comment])
+        view_item = GetListViewItem(session['user_name'])
         template_value = {'user_name':session['user_name'], 'view_item':view_item}
         template = JINJA_ENVIRONMENT.get_template('/html/list.html')
         self.response.write(template.render(template_value))
@@ -184,7 +223,7 @@ class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
         file_is_good = False
         file_exists = True
         token_is_good = False
-        
+
         #正規の日付であるか調べる。
         try:
             year = int(self.request.get('year'))
@@ -211,7 +250,7 @@ class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
         if session.has_key('token'):
             if session['token'] == self.request.get('token'):
                 token_is_good = True
-            
+
         #日付が正しく、ファイルが正しく、トークンが正しければ登録する。
         if date_is_good and file_is_good and token_is_good and session.has_key('user_name'):
             omoide = Omoide()
@@ -246,6 +285,8 @@ class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
 #ルータ
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
+    ('/delete/([^/]+)', DeleteHandler),
+    ('/delete_list', DeleteListHandler),
     ('/download/([^/]+)', DownloadHandler),
     ('/list', ListHandler),
     ('/login', LoginHandler),

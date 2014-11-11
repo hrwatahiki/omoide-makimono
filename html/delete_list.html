@@ -1,16 +1,14 @@
 {% extends "/html/base_template.html" %}
 {% block css %}
 <link rel="stylesheet" type="text/css" href="/MyThumbnail/MyThumbnail.css">
-<link rel="stylesheet" type="text/css" href="/lightbox/css/lightbox.css">
 {% endblock %}
 {% block js %}
 <script type="text/javascript" src="/jquery/jquery-2.1.1.min.js"></script>
 <script type="text/javascript" src="/MyThumbnail/jquery.MyThumbnail.js"></script>
-<script type="text/javascript" src="/lightbox/js/lightbox.min.js"></script>
 <script type="text/javascript" src="/js/list.js"></script>
 {% endblock %}
 {% block message %}
-<div><a href="/register">画像を登録</a>&nbsp;<a href="/delete_list">画像を削除</a>&nbsp;<a href="/logout">ログアウト</a></div>
+<div>削除する画像をクリックしてください。<a href="/list">戻る</a>&nbsp;<a href="/logout">ログアウト</a></div>
 <hr>
 {% endblock %}
 {% block content %}
@@ -21,7 +19,7 @@
     <td>
       <div class="thumbnail-list">
       {% for image_data in month_data[2] %}
-        <a href="/download/{{ image_data[0] }}"
+        <a href="/delete/{{ image_data[0] }}"
            data-lightbox="list-{{ month_data[0] }}-{{ month_data[1] }}"
            title="{{ image_data[1] }}">
           <img src="/download/{{ image_data[0] }}" alt="{{ image_data[1] }}">
