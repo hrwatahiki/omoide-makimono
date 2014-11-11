@@ -9,7 +9,7 @@ Other scripts follow the original license.
 
 #おもいでまきもの
 画像をタイムライン上に表示する画像掲示板のスクリプトです。
-author: hrwatahiki(hrwatahiki at gmail.com, twitter:@hrwatahiki)
+作者: hrwatahiki(hrwatahiki at gmail.com, twitter:@hrwatahiki)
 
 ##ライセンス
 main.py は MIT Licenseです。
