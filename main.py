@@ -73,10 +73,15 @@ class ListHandler(webapp2.RequestHandler):
 
         
 class LoginHandler(webapp2.RequestHandler):
+    """ログインする。"""
     def get(self):
         template_value = {}
         template = JINJA_ENVIRONMENT.get_template('/html/login.html')
         self.response.write(template.render(template_value))        
+    
+    def post(self):
+        #todo:login
+        pass
     
     
 class LogoutHandler(webapp2.RequestHandler):
@@ -139,7 +144,7 @@ class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
             omoide.date = omoide_date
             omoide.put()
             message = message + u'登録しました。'
-        elif file_is_good:
+        elif file_exists:
             blob_info.delete()
 
 
