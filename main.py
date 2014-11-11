@@ -23,6 +23,9 @@ import urllib
 import jinja2
 import webapp2
 
+import logging
+import base64
+
 from google.appengine.ext import ndb
 from google.appengine.ext import blobstore
 from google.appengine.ext.webapp import blobstore_handlers
@@ -63,6 +66,15 @@ def GetListViewItem(user_name):
     return view_item
 
 
+def Decode(str):
+    """base64→utf-8のデコードを行う。"""
+    try:
+        r = base64.b64decode(str).decode('utf-8')
+    except UnicodeDecodeError:
+        r = str
+    return r
+    
+    
 class MainHandler(webapp2.RequestHandler):
     """デフォルト。ログイン画面へリダイレクトする。"""
     def get(self):
@@ -155,8 +167,6 @@ class LoginHandler(webapp2.RequestHandler):
             #DBにユーザ名とパスワードが一致するユーザがあれば、ログインする。
             user = User.query(ndb.AND(User.user_name==user_name, User.password==password)).fetch(1)
             if user:
-                session['user_name'] = user_name
-                session['token'] = hashlib.sha512('3rjTK9pJVZtG'+str(datetime.datetime.now())).hexdigest()
                 logged_in = True
         elif self.request.get('new'):
             #DBに同じユーザがいなければ、ユーザを新規登録し、ログインする。
@@ -168,10 +178,11 @@ class LoginHandler(webapp2.RequestHandler):
                 user.user_name = user_name
                 user.password = password
                 user.put()
-                session['user_name'] = user_name
                 logged_in = True
 
         if logged_in:
+            session['user_name'] = user_name
+            session['token'] = hashlib.sha512('3rjTK9pJVZtG'+str(datetime.datetime.now())).hexdigest()
             self.redirect('/list')
             return
 
@@ -223,6 +234,8 @@ class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
         file_is_good = False
         file_exists = True
         token_is_good = False
+        
+        comment = Decode(self.request.get('comment'))
 
         #正規の日付であるか調べる。
         try:
@@ -256,7 +269,7 @@ class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
             omoide = Omoide()
             omoide.user_name = session['user_name']
             omoide.image_key = blob_info.key()
-            omoide.comment = self.request.get('comment')
+            omoide.comment = comment
             omoide.date = omoide_date
             omoide.put()
             message = message + u'登録しました。'
@@ -267,7 +280,7 @@ class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
         if not session.has_key('user_name'):
             self.redirect('/login')
             return
-
+        
         #画面を出力する。
         template_value = {
             'user_name':session['user_name'],
@@ -275,7 +288,7 @@ class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
             'upload_url':blobstore.create_upload_url('/upload'),
             'year':self.request.get('year'),
             'month':self.request.get('month'),
-            'comment':self.request.get('comment'),
+            'comment':comment,
             'token':session['token'],
         }
         template = JINJA_ENVIRONMENT.get_template('/html/register.html')
