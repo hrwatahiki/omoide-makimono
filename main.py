@@ -63,6 +63,9 @@ def Decode(str):
         r = base64.b64decode(str).decode('utf-8')
     except (UnicodeDecodeError, UnicodeEncodeError, TypeError):
         r = str
+    except:
+        logging.error('Unknown error in Decode.')
+        r = str
     return r
 
 
