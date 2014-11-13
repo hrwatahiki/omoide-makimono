@@ -4,7 +4,7 @@ Web forum site scripts for the timeline of images.
 author: hrwatahiki(hrwatahiki at gmail.com, twitter:@hrwatahiki)
 
 ##License
-main.py is MIT License.
+main.py and files in css, html or js directory are MIT License.
 Other scripts follow the original license.
 
 #おもいでまきもの
@@ -12,7 +12,7 @@ Other scripts follow the original license.
 作者: hrwatahiki(hrwatahiki at gmail.com, twitter:@hrwatahiki)
 
 ##ライセンス
-main.py は MIT Licenseです。
+main.pyとcss、html、jsディレクトリにあるファイルは、MIT Licenseです。
 それ以外のスクリプトは元のライセンスに従います。
 
 

@@ -1,20 +1,11 @@
 #!/usr/bin/env python
 #!-*- coding:utf-8 -*-
-#
-# Copyright 2007 Google Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
+# copyright 2014 hrwatahiki
+# mail: hrwatahiki at gmail.com
+# twitter:@hrwatahiki
+# github:https://github.com/hrwatahiki/omoide-makimono
+# This script is under MIT License.
+
 import datetime
 import hashlib
 import os
@@ -70,16 +61,23 @@ def Decode(str):
     """base64→utf-8のデコードを行う。"""
     try:
         r = base64.b64decode(str).decode('utf-8')
-    except UnicodeDecodeError:
+    except (UnicodeDecodeError, UnicodeEncodeError, TypeError):
         r = str
     return r
-    
-    
+
+
 class MainHandler(webapp2.RequestHandler):
     """デフォルト。ログイン画面へリダイレクトする。"""
     def get(self):
         self.redirect('/login')
         return
+
+
+class AboutHandler(webapp2.RequestHandler):
+    """サービスの説明を表示する。"""
+    def get(self):
+        template = JINJA_ENVIRONMENT.get_template('/html/about.html')
+        self.response.write(template.render({}))
 
 
 class DeleteHandler(webapp2.RequestHandler):
@@ -234,7 +232,7 @@ class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
         file_is_good = False
         file_exists = True
         token_is_good = False
-        
+
         comment = Decode(self.request.get('comment'))
 
         #正規の日付であるか調べる。
@@ -280,7 +278,7 @@ class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
         if not session.has_key('user_name'):
             self.redirect('/login')
             return
-        
+
         #画面を出力する。
         template_value = {
             'user_name':session['user_name'],
@@ -298,6 +296,7 @@ class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
 #ルータ
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
+    ('/about', AboutHandler),
     ('/delete/([^/]+)', DeleteHandler),
     ('/delete_list', DeleteListHandler),
     ('/download/([^/]+)', DownloadHandler),
