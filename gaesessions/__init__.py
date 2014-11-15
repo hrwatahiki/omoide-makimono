@@ -17,7 +17,8 @@ from google.appengine.ext import db
 COOKIE_NAME_PREFIX = "DgU"  # identifies a cookie as being one used by gae-sessions (so you can set cookies too)
 COOKIE_PATH = "/"
 DEFAULT_COOKIE_ONLY_THRESH = 10240  # 10KB: GAE only allows ~16000B in HTTP header - leave ~6KB for other info
-DEFAULT_LIFETIME = datetime.timedelta(days=7)
+DEFAULT_LIFETIME = datetime.timedelta(days=1)
+SSL_ONLY = True
 
 # constants
 SID_LEN = 43  # timestamp (10 chars) + underscore + md5 (32 hex chars)
@@ -231,7 +232,7 @@ class Session(object):
             self.__set_sid(self.__make_sid(expiration_ts, self.is_ssl_only()))
             self.dirty = True  # ensure the data is written to the new session
 
-    def start(self, expiration_ts=None, ssl_only=False):
+    def start(self, expiration_ts=None, ssl_only=SSL_ONLY):
         """Starts a new session.  expiration specifies when it will expire.  If
         expiration is not specified, then self.lifetime will used to
         determine the expiration date.
