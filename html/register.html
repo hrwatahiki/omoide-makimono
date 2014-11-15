@@ -10,7 +10,7 @@
   <form action="{{ upload_url }}" enctype="multipart/form-data" method="post">
     <input type="file" name="image" id="image"><br>
     写真の年月：<input type="text" name="year" id="year" size="4" value="{{ year }}"><label for="year">年</label>
-    &nbsp;<input type="text" name="month" id="month" size="2" value="{{ month }}"><label for="month">月</label><br>
+    &nbsp;<input type="text" name="month" id="month" size="2" value="{{ month }}"><label for="month">月</label>(半角)<br>
     <label for="comment">コメント：</label><input type="text" name="comment" id="comment" value="{{ comment }}"><br>
     <input type="hidden" name="token" id="token" value="{{ token }}">
     <input type="submit" value="登録">
